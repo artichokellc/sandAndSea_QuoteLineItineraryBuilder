@@ -1,0 +1,474 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>66.0</apiVersion>
+
+    <!--
+        ITINERARY BUILDER — Screen Flow
+        Launched from Quick Action on Quote record.
+        Lets users add multiple QuoteLineItems in one session.
+
+        Each line item is saved immediately when the user clicks Save & Exit.
+
+        Flow sequence:
+          Get_Quote → Init_New_Line_Item → Screen_Add_Line_Item
+            → Get_Pricebook_Entry → Assign_PBE_to_QLI → Save_Line_Item
+            → Decision_Add_Another → (loop OR) Screen_Success
+
+        Key decisions:
+        - "Add Another" checkbox uses objectFieldReference>var_addAnother (Boolean).
+          The Flow Builder shows this as a visual warning but it deploys and runs correctly.
+        - Sales Price uses dataType>Number (not Currency) on the InputField.
+          Using Currency dataType causes INVALID_TYPE_ON_FIELD_IN_RECORD at runtime
+          because Flow serializes the value incorrectly to the SOAP API.
+          Number type passes a clean decimal that the Currency field accepts.
+    -->
+
+    <!-- ═══ FORMULAS ═══ -->
+
+    <!--
+        Sales Price is captured via var_pbe.UnitPrice on the screen (not var_currentQLI.UnitPrice
+        directly). Reason: after recordCreates runs with inputReference>var_currentQLI, Salesforce
+        writes the new record Id back into var_currentQLI and clears UnitPrice from the variable.
+        On the next loop, ResetValues would then display null. var_pbe is never passed to
+        recordCreates, so its UnitPrice field survives the loop intact.
+
+        The formula reads var_pbe.UnitPrice (user's screen input) and type-coerces it to a
+        clean Number. We then assign the result to var_currentQLI.UnitPrice before Save_Line_Item,
+        which is what the SOAP API requires for a Currency field.
+    -->
+    <formulas>
+        <name>formula_unitPrice</name>
+        <dataType>Number</dataType>
+        <scale>2</scale>
+        <expression>{!var_pbe.UnitPrice}</expression>
+    </formulas>
+
+    <!-- ═══ ASSIGNMENTS ═══ -->
+
+    <assignments>
+        <name>Assign_PBE_to_QLI</name>
+        <label>Assign Pricebook Entry to QLI</label>
+        <locationX>176</locationX>
+        <locationY>600</locationY>
+        <assignmentItems>
+            <assignToReference>var_currentQLI.PricebookEntryId</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>var_pricebookEntryId</elementReference>
+            </value>
+        </assignmentItems>
+        <!-- Re-assign UnitPrice through formula_unitPrice to force proper Number type.
+             Flow stores Currency SObject fields as strings when set via screen InputField;
+             reading through a formula returns the correct numeric type. -->
+        <assignmentItems>
+            <assignToReference>var_currentQLI.UnitPrice</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>formula_unitPrice</elementReference>
+            </value>
+        </assignmentItems>
+        <connector>
+            <targetReference>Save_Line_Item</targetReference>
+        </connector>
+    </assignments>
+
+    <assignments>
+        <name>Init_New_Line_Item</name>
+        <label>Init New Line Item</label>
+        <locationX>176</locationX>
+        <locationY>240</locationY>
+        <assignmentItems>
+            <assignToReference>var_currentQLI.QuoteId</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>recordId</elementReference>
+            </value>
+        </assignmentItems>
+        <assignmentItems>
+            <assignToReference>var_currentQLI.Quantity</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <numberValue>1</numberValue>
+            </value>
+        </assignmentItems>
+        <assignmentItems>
+            <assignToReference>var_pbe.Product2Id</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <stringValue></stringValue>
+            </value>
+        </assignmentItems>
+        <assignmentItems>
+            <assignToReference>var_currentQLI.Description</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <stringValue></stringValue>
+            </value>
+        </assignmentItems>
+        <assignmentItems>
+            <assignToReference>var_currentQLI.Supplier__c</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <stringValue></stringValue>
+            </value>
+        </assignmentItems>
+        <assignmentItems>
+            <assignToReference>var_currentQLI.Provider__c</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <stringValue></stringValue>
+            </value>
+        </assignmentItems>
+        <!-- Reset "Add Another" checkbox to unchecked each iteration.
+             We use var_pbe.UseStandardPrice (a real SObject Boolean field) as the
+             checkbox binding — objectFieldReference to a plain Boolean variable does
+             not render at runtime. var_pbe is never written to the DB so this is safe. -->
+        <assignmentItems>
+            <assignToReference>var_pbe.UseStandardPrice</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <booleanValue>false</booleanValue>
+            </value>
+        </assignmentItems>
+        <connector>
+            <targetReference>Screen_Add_Line_Item</targetReference>
+        </connector>
+    </assignments>
+
+    <!-- ═══ DECISIONS ═══ -->
+
+    <decisions>
+        <name>Decision_Add_Another</name>
+        <label>Add Another?</label>
+        <locationX>176</locationX>
+        <locationY>840</locationY>
+        <defaultConnector>
+            <targetReference>Screen_Success</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>No — Exit</defaultConnectorLabel>
+        <rules>
+            <name>outcome_AddAnother</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>var_pbe.UseStandardPrice</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <booleanValue>true</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Init_New_Line_Item</targetReference>
+            </connector>
+            <label>Yes — Add Another</label>
+        </rules>
+    </decisions>
+
+    <!-- ═══ METADATA ═══ -->
+
+    <description>Itinerary Builder — allows sales users to create multiple Quote Line Items in a single session launched from the Quote record Quick Action. Each record is saved immediately on button click.</description>
+    <environments>Default</environments>
+    <interviewLabel>Itinerary Builder {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>Itinerary Builder</label>
+    <processType>Flow</processType>
+
+    <!-- ═══ RECORD CREATES ═══ -->
+
+    <recordCreates>
+        <name>Save_Line_Item</name>
+        <label>Save Line Item</label>
+        <locationX>176</locationX>
+        <locationY>720</locationY>
+        <connector>
+            <targetReference>Decision_Add_Another</targetReference>
+        </connector>
+        <faultConnector>
+            <targetReference>Screen_Error</targetReference>
+        </faultConnector>
+        <inputReference>var_currentQLI</inputReference>
+    </recordCreates>
+
+    <!-- ═══ RECORD LOOKUPS ═══ -->
+
+    <recordLookups>
+        <name>Get_Pricebook_Entry</name>
+        <label>Get Pricebook Entry</label>
+        <locationX>176</locationX>
+        <locationY>480</locationY>
+        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Assign_PBE_to_QLI</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Product2Id</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>var_pbe.Product2Id</elementReference>
+            </value>
+        </filters>
+        <filters>
+            <field>Pricebook2Id</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>var_pricebook2Id</elementReference>
+            </value>
+        </filters>
+        <filters>
+            <field>IsActive</field>
+            <operator>EqualTo</operator>
+            <value>
+                <booleanValue>true</booleanValue>
+            </value>
+        </filters>
+        <getFirstRecordOnly>true</getFirstRecordOnly>
+        <object>PricebookEntry</object>
+        <outputAssignments>
+            <assignToReference>var_pricebookEntryId</assignToReference>
+            <field>Id</field>
+        </outputAssignments>
+    </recordLookups>
+
+    <recordLookups>
+        <name>Get_Quote</name>
+        <label>Get Quote</label>
+        <locationX>176</locationX>
+        <locationY>120</locationY>
+        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Init_New_Line_Item</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Id</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>recordId</elementReference>
+            </value>
+        </filters>
+        <getFirstRecordOnly>true</getFirstRecordOnly>
+        <object>Quote</object>
+        <outputAssignments>
+            <assignToReference>var_pricebook2Id</assignToReference>
+            <field>Pricebook2Id</field>
+        </outputAssignments>
+    </recordLookups>
+
+    <!-- ═══ RUN IN MODE ═══ -->
+
+    <runInMode>DefaultMode</runInMode>
+
+    <!-- ═══ SCREENS ═══ -->
+
+    <screens>
+        <name>Screen_Add_Line_Item</name>
+        <label>Add Line Item</label>
+        <locationX>176</locationX>
+        <locationY>360</locationY>
+        <allowBack>false</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <connector>
+            <targetReference>Get_Pricebook_Entry</targetReference>
+        </connector>
+        <fields>
+            <name>display_Header</name>
+            <fieldText>&lt;p&gt;&lt;strong style="font-size: 16px;"&gt;Add Itinerary Line Item&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;Fill in the details and click &lt;strong&gt;Save &amp;amp; Exit&lt;/strong&gt;. Check &lt;em&gt;Add another line item after saving&lt;/em&gt; to loop back to this screen.&lt;/p&gt;</fieldText>
+            <fieldType>DisplayText</fieldType>
+        </fields>
+        <!--
+            Checkbox binds to var_pbe.UseStandardPrice — a real Boolean SObject field.
+            objectFieldReference MUST point to an SObject field to render at runtime.
+            var_pbe is only used as a query filter and is never saved to the DB,
+            so using UseStandardPrice here is safe. fieldText overrides the displayed label.
+        -->
+        <fields>
+            <name>input_AddAnother</name>
+            <dataType>Boolean</dataType>
+            <fieldText>Add another line item after saving</fieldText>
+            <fieldType>InputField</fieldType>
+            <inputsOnNextNavToAssocScrn>ResetValues</inputsOnNextNavToAssocScrn>
+            <isRequired>true</isRequired>
+            <objectFieldReference>var_pbe.UseStandardPrice</objectFieldReference>
+        </fields>
+        <fields>
+            <name>input_Product</name>
+            <dataType>String</dataType>
+            <fieldText>Product</fieldText>
+            <fieldType>InputField</fieldType>
+            <inputsOnNextNavToAssocScrn>ResetValues</inputsOnNextNavToAssocScrn>
+            <isRequired>true</isRequired>
+            <objectFieldReference>var_pbe.Product2Id</objectFieldReference>
+        </fields>
+        <fields>
+            <name>input_Quantity</name>
+            <dataType>Number</dataType>
+            <fieldText>Quantity</fieldText>
+            <fieldType>InputField</fieldType>
+            <inputsOnNextNavToAssocScrn>ResetValues</inputsOnNextNavToAssocScrn>
+            <isRequired>true</isRequired>
+            <objectFieldReference>var_currentQLI.Quantity</objectFieldReference>
+            <scale>0</scale>
+        </fields>
+        <fields>
+            <name>input_Description</name>
+            <dataType>String</dataType>
+            <fieldText>Line Item Description</fieldText>
+            <fieldType>InputField</fieldType>
+            <inputsOnNextNavToAssocScrn>ResetValues</inputsOnNextNavToAssocScrn>
+            <isRequired>false</isRequired>
+            <objectFieldReference>var_currentQLI.Description</objectFieldReference>
+        </fields>
+        <fields>
+            <name>input_StartDate</name>
+            <dataType>Date</dataType>
+            <fieldText>Start Date</fieldText>
+            <fieldType>InputField</fieldType>
+            <inputsOnNextNavToAssocScrn>ResetValues</inputsOnNextNavToAssocScrn>
+            <isRequired>false</isRequired>
+            <objectFieldReference>var_currentQLI.Start_Date__c</objectFieldReference>
+        </fields>
+        <fields>
+            <name>input_EndDate</name>
+            <dataType>Date</dataType>
+            <fieldText>End Date</fieldText>
+            <fieldType>InputField</fieldType>
+            <inputsOnNextNavToAssocScrn>ResetValues</inputsOnNextNavToAssocScrn>
+            <isRequired>false</isRequired>
+            <objectFieldReference>var_currentQLI.End_Date__c</objectFieldReference>
+        </fields>
+        <fields>
+            <name>input_Supplier</name>
+            <dataType>String</dataType>
+            <fieldText>Supplier / Booking Channel</fieldText>
+            <fieldType>InputField</fieldType>
+            <inputsOnNextNavToAssocScrn>ResetValues</inputsOnNextNavToAssocScrn>
+            <isRequired>false</isRequired>
+            <objectFieldReference>var_currentQLI.Supplier__c</objectFieldReference>
+        </fields>
+        <fields>
+            <name>input_Provider</name>
+            <dataType>String</dataType>
+            <fieldText>Provider</fieldText>
+            <fieldType>InputField</fieldType>
+            <inputsOnNextNavToAssocScrn>ResetValues</inputsOnNextNavToAssocScrn>
+            <isRequired>false</isRequired>
+            <objectFieldReference>var_currentQLI.Provider__c</objectFieldReference>
+        </fields>
+        <!--
+            Binds to var_pbe.UnitPrice (not var_currentQLI.UnitPrice) for two reasons:
+            1. After recordCreates with inputReference>var_currentQLI, Salesforce clears
+               UnitPrice from var_currentQLI. Binding to var_pbe.UnitPrice avoids that —
+               var_pbe is never used in recordCreates so its fields survive the loop.
+            2. isRequired enforcement is reliable on a standard SObject Currency field
+               with no dataType mismatch ambiguity.
+            dataType>Number (not Currency) still required to avoid INVALID_TYPE_ON_FIELD_IN_RECORD.
+            formula_unitPrice reads var_pbe.UnitPrice and assigns to var_currentQLI.UnitPrice
+            in Assign_PBE_to_QLI before Save_Line_Item.
+        -->
+        <fields>
+            <name>input_SalesPrice</name>
+            <dataType>Number</dataType>
+            <fieldText>Sales Price</fieldText>
+            <fieldType>InputField</fieldType>
+            <inputsOnNextNavToAssocScrn>ResetValues</inputsOnNextNavToAssocScrn>
+            <isRequired>true</isRequired>
+            <objectFieldReference>var_pbe.UnitPrice</objectFieldReference>
+            <scale>2</scale>
+        </fields>
+        <nextOrFinishButtonLabel>Save &amp; Exit</nextOrFinishButtonLabel>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+
+    <screens>
+        <name>Screen_Error</name>
+        <label>Error</label>
+        <locationX>440</locationX>
+        <locationY>720</locationY>
+        <allowBack>false</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <fields>
+            <name>display_Error</name>
+            <fieldText>&lt;p&gt;&lt;strong&gt;This line item could not be saved.&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;{!$Flow.FaultMessage}&lt;/p&gt;&lt;p&gt;Any previously saved line items are preserved. Please close this window and try again. If the problem persists, contact your administrator.&lt;/p&gt;</fieldText>
+            <fieldType>DisplayText</fieldType>
+        </fields>
+        <nextOrFinishButtonLabel>Close</nextOrFinishButtonLabel>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+
+    <screens>
+        <name>Screen_Success</name>
+        <label>Success</label>
+        <locationX>176</locationX>
+        <locationY>960</locationY>
+        <allowBack>false</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <fields>
+            <name>display_Success</name>
+            <fieldText>&lt;p&gt;&lt;strong&gt;Itinerary saved successfully!&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;All line items have been added to the quote. Click Done to return to the record.&lt;/p&gt;</fieldText>
+            <fieldType>DisplayText</fieldType>
+        </fields>
+        <nextOrFinishButtonLabel>Done</nextOrFinishButtonLabel>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+
+    <!-- ═══ START ═══ -->
+
+    <start>
+        <locationX>176</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Get_Quote</targetReference>
+        </connector>
+    </start>
+    <status>Active</status>
+
+    <!-- ═══ VARIABLES ═══ -->
+
+    <variables>
+        <name>recordId</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+
+    <variables>
+        <name>var_currentQLI</name>
+        <dataType>SObject</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <objectType>QuoteLineItem</objectType>
+    </variables>
+
+    <variables>
+        <name>var_pbe</name>
+        <dataType>SObject</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <objectType>PricebookEntry</objectType>
+    </variables>
+
+    <variables>
+        <name>var_pricebook2Id</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+
+    <variables>
+        <name>var_pricebookEntryId</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+
+</Flow>

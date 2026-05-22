@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs basename:*)",
+      "Bash(grep -r -i quote /c/Users/micha/OneDrive/Desktop/Projects/sandandsea_sbx --include=*.cls --include=*.js --include=*.ts --include=*.tsx --include=*.json --include=*.xml --exclude-dir=node_modules --exclude-dir=.sfdx --exclude-dir=.sf)",
+      "Bash(find /c/Users/micha/OneDrive/Desktop/Projects/sandandsea_sbx -type d -name Quote*)"
+    ]
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell -Command \"& 'C:\\\\Program Files\\\\sf\\\\bin\\\\sf.cmd' data query --query \\\\\"SELECT Id, Name, Status FROM Quote WHERE Id = '0Q0Ea000006RR2HKAW'\\\\\" --target-org sandandsea_sbx\")",
+      "Bash(powershell -Command \"& 'C:\\\\Program Files\\\\sf\\\\bin\\\\sf.cmd' data query --query \\\\\"SELECT Id, Name, IsActive FROM PricebookEntry WHERE Id = '01uQl000001U5RVIA0'\\\\\" --target-org sandandsea_sbx\")",
+      "Bash(powershell -Command \"& 'C:\\\\Program Files\\\\sf\\\\bin\\\\sf.cmd' data query --query \\\\\"SELECT Id, Name, DeveloperName FROM RecordType WHERE SobjectType = 'Account'\\\\\" --target-org sandandsea_sbx\")",
+      "Bash(powershell -Command \"& 'C:\\\\Program Files\\\\sf\\\\bin\\\\sf.cmd' project deploy start --source-dir 'force-app/main/default/classes/ItineraryBuilderController.cls' --source-dir 'force-app/main/default/lwc/itinerarySpreadsheet' --target-org sandandsea_sbx --ignore-conflicts 2>&1 | Select-String 'Changed|Error|Failed|Deployed Source|2/2|Components'\")",
+      "Bash(powershell -Command \"& 'C:\\\\Program Files\\\\sf\\\\bin\\\\sf.cmd' apex run --file 'C:\\\\Users\\\\micha\\\\OneDrive\\\\Desktop\\\\Projects\\\\sandandsea_sbx\\\\scripts\\\\apex\\\\run_tests.apex' --target-org sandandsea_sbx\")",
+      "Bash(sf apex *)"
+    ]
+  }
+}

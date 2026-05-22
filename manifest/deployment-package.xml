@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+  Deployment package for the Itinerary Builder build.
+  Includes only the components created or modified in this project.
+  Excludes QLI_Set_Default_Commission (must remain DEACTIVATED in Production).
+
+  Usage (if Chris G has SF CLI + Production org access):
+    sf project deploy start --manifest manifest/deployment-package.xml --target-org sandandsea_prod
+-->
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+
+    <types>
+        <members>ItineraryBuilderController</members>
+        <members>ItineraryBuilderControllerTest</members>
+        <name>ApexClass</name>
+    </types>
+
+    <types>
+        <members>itinerarySpreadsheet</members>
+        <members>lookupInput</members>
+        <name>LightningComponentBundle</name>
+    </types>
+
+    <types>
+        <members>QuoteLineItem.Commission_Amount_Manual__c</members>
+        <members>QuoteLineItem.Sort_Order__c</members>
+        <name>CustomField</name>
+    </types>
+
+    <types>
+        <members>Itinerary_Builder_Access</members>
+        <name>CustomPermission</name>
+    </types>
+
+    <types>
+        <members>Itinerary_Builder</members>
+        <name>PermissionSet</name>
+    </types>
+
+    <version>66.0</version>
+</Package>

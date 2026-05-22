@@ -1,0 +1,242 @@
+<template>
+    <div class="sns-wrapper">
+
+        <!-- ── Brand header ──────────────────────────────────────────────── -->
+        <div class="brand-header">
+            <p class="brand-logo">Sand <span>&amp;</span> Sea Travel</p>
+            <p class="brand-tagline">Your journey starts here</p>
+            <p class="section-title">Add Itinerary Line Items</p>
+            <p class="section-subtitle">Fill in the rows below, then click Save All Line Items.</p>
+        </div>
+
+        <!-- ── Loading spinner ───────────────────────────────────────────── -->
+        <template if:true={isLoading}>
+            <div class="loading-wrap">
+                <lightning-spinner alternative-text="Loading..." size="small"></lightning-spinner>
+            </div>
+        </template>
+
+        <!-- ── Spreadsheet table ─────────────────────────────────────────── -->
+        <template if:false={isLoading}>
+            <div class="table-wrap">
+                <table>
+                    <colgroup>
+                        <col class="col-drag"       />
+                        <col class="col-product"    />
+                        <col class="col-lookup"     />
+                        <col class="col-price"      />
+                        <col class="col-commission" />
+                        <col class="col-comm-amount"/>
+                        <col class="col-date"       />
+                        <col class="col-date"       />
+                        <col class="col-lookup"     />
+                        <col class="col-desc"       />
+                        <col class="col-del"        />
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>Product <abbr title="required">*</abbr></th>
+                            <th>Supplier</th>
+                            <th>Sales Price <abbr title="required">*</abbr></th>
+                            <th>Comm %</th>
+                            <th>Comm $</th>
+                            <th>Start Date</th>
+                            <th>End Date</th>
+                            <th>Provider</th>
+                            <th>Description</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template for:each={rows} for:item="row">
+                            <tr key={row.id} class={row._rowClass}
+                                draggable="true"
+                                data-row-id={row.id}
+                                ondragstart={handleDragStart}
+                                ondragover={handleDragOver}
+                                ondrop={handleDrop}
+                                ondragend={handleDragEnd}>
+
+                                <!-- Drag handle -->
+                                <td class="drag-cell">
+                                    <span class="drag-handle" title="Drag to reorder">&#8942;</span>
+                                </td>
+
+                                <!-- Product lookup -->
+                                <td>
+                                    <c-lookup-input
+                                        value={row.product2Name}
+                                        object-api-name="Product2"
+                                        pricebook2-id={effectivePricebook2Id}
+                                        placeholder="Search products..."
+                                        has-error={row._productError}
+                                        data-row-id={row.id}
+                                        data-field="product2Id"
+                                        data-name-field="product2Name"
+                                        onlookupselect={handleLookupSelect}
+                                        oninputchange={handleLookupInputChange}
+                                    ></c-lookup-input>
+                                </td>
+
+                                <!-- Supplier lookup -->
+                                <td>
+                                    <c-lookup-input
+                                        value={row.supplierName}
+                                        object-api-name="Account"
+                                        placeholder="Search supplier..."
+                                        data-row-id={row.id}
+                                        data-field="supplierId"
+                                        data-name-field="supplierName"
+                                        onlookupselect={handleLookupSelect}
+                                        oninputchange={handleLookupInputChange}
+                                    ></c-lookup-input>
+                                </td>
+
+                                <!-- Sales Price — text input so we control the 2-decimal display -->
+                                <td>
+                                    <div class="price-wrap">
+                                        <span class="price-symbol">$</span>
+                                        <input type="text" class={row._priceInputClass}
+                                            value={row.salesPriceDisplay}
+                                            placeholder="0.00"
+                                            onchange={handlePriceChange}
+                                            onblur={handlePriceBlur}
+                                            data-row-id={row.id}
+                                            data-field="salesPrice" />
+                                    </div>
+                                </td>
+
+                                <!-- Commission % — auto-populated from supplier; manually overridable -->
+                                <td>
+                                    <div class="comm-wrap">
+                                        <input type="number" class="comm-input"
+                                            value={row.commissionRate}
+                                            step="0.01"
+                                            min="0"
+                                            placeholder="0.00"
+                                            onchange={handleCommissionChange}
+                                            data-row-id={row.id} />
+                                        <span class="comm-symbol">%</span>
+                                    </div>
+                                </td>
+
+                                <!-- Commission $ — auto-computed from Sales Price × Comm %; manually overridable -->
+                                <td>
+                                    <div class="price-wrap">
+                                        <span class="price-symbol">$</span>
+                                        <input type="text" class="comm-amount-input"
+                                            value={row.commissionAmountDisplay}
+                                            placeholder="0.00"
+                                            onchange={handleCommissionAmountChange}
+                                            onblur={handleCommissionAmountBlur}
+                                            data-row-id={row.id} />
+                                    </div>
+                                </td>
+
+                                <!-- Start Date -->
+                                <td>
+                                    <input type="text" class={row._startDateClass}
+                                        value={row.startDate}
+                                        placeholder="mm/dd/yyyy"
+                                        onblur={handleDateBlur}
+                                        data-row-id={row.id}
+                                        data-field="startDate" />
+                                </td>
+
+                                <!-- End Date -->
+                                <td>
+                                    <input type="text" class={row._endDateClass}
+                                        value={row.endDate}
+                                        placeholder="mm/dd/yyyy"
+                                        onblur={handleDateBlur}
+                                        data-row-id={row.id}
+                                        data-field="endDate" />
+                                </td>
+
+                                <!-- Provider lookup — restricted to Business_Supplier record type -->
+                                <td>
+                                    <c-lookup-input
+                                        value={row.providerName}
+                                        object-api-name="Account"
+                                        record-type-name="Business_Supplier"
+                                        placeholder="Search provider..."
+                                        data-row-id={row.id}
+                                        data-field="providerId"
+                                        data-name-field="providerName"
+                                        onlookupselect={handleLookupSelect}
+                                        oninputchange={handleLookupInputChange}
+                                    ></c-lookup-input>
+                                </td>
+
+                                <!-- Description -->
+                                <td>
+                                    <lightning-input
+                                        type="text"
+                                        label="Description"
+                                        variant="label-hidden"
+                                        value={row.description}
+                                        onchange={handleFieldChange}
+                                        data-row-id={row.id}
+                                        data-field="description"
+                                    ></lightning-input>
+                                </td>
+
+                                <!-- Delete — tabindex="-1" so Tab skips it -->
+                                <td class="del-cell">
+                                    <lightning-button-icon
+                                        icon-name="utility:delete"
+                                        variant="bare"
+                                        alternative-text="Remove row"
+                                        title="Remove row"
+                                        tabindex="-1"
+                                        onclick={handleDeleteRow}
+                                        data-row-id={row.id}
+                                    ></lightning-button-icon>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </template>
+
+        <!-- ── Footer ────────────────────────────────────────────────────── -->
+        <div class="table-footer">
+
+            <div class="footer-top">
+                <div class="add-row-wrap">
+                    <lightning-button
+                        label="+ Add Row"
+                        variant="neutral"
+                        onclick={handleAddRow}
+                    ></lightning-button>
+                </div>
+                <span class="row-count">{rowCountLabel}</span>
+            </div>
+
+            <template if:true={errorMessage}>
+                <div class="error-msg" role="alert">
+                    <lightning-icon icon-name="utility:error" size="x-small" class="error-icon"></lightning-icon>
+                    {errorMessage}
+                </div>
+            </template>
+
+            <div class="save-row">
+                <div class="save-btn-wrap">
+                    <lightning-button
+                        label="Save All Line Items"
+                        variant="brand"
+                        onclick={handleSave}
+                        disabled={isSaving}
+                    ></lightning-button>
+                </div>
+                <template if:true={isSaving}>
+                    <lightning-spinner alternative-text="Saving..." size="small"></lightning-spinner>
+                </template>
+            </div>
+
+        </div>
+
+    </div>
+</template>

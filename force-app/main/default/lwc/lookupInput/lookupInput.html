@@ -1,0 +1,33 @@
+<template>
+    <div class="lup-wrap">
+        <input type="text"
+            class={_inputClass}
+            value={value}
+            placeholder={placeholder}
+            oninput={handleInput}
+            onblur={handleBlur} />
+        <lightning-button-icon
+            icon-name="utility:search"
+            variant="bare"
+            alternative-text="Search"
+            class="lup-btn"
+            onmousedown={handleBtnMouseDown}
+            onclick={handleBtnClick}
+        ></lightning-button-icon>
+        <template if:true={_showDrop}>
+            <ul class="lup-dropdown" style={_dropStyle}>
+                <template for:each={_results} for:item="res">
+                    <li key={res.Id} class="lup-option"
+                        data-id={res.Id}
+                        data-name={res.Name}
+                        onmousedown={handleSelectResult}>
+                        {res.Name}
+                    </li>
+                </template>
+                <template if:true={_dropEmpty}>
+                    <li class="lup-option lup-empty">No results found</li>
+                </template>
+            </ul>
+        </template>
+    </div>
+</template>

@@ -1,0 +1,81 @@
+:host {
+    display: block;
+}
+
+.lup-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.lup-input {
+    flex: 1;
+    min-width: 0;
+    height: 1.875rem;
+    padding: 0 0.5rem;
+    font-size: 0.8125rem;
+    color: var(--slds-g-color-neutral-base-10, #181818);
+    background: var(--slds-g-color-neutral-base-100, #ffffff);
+    border: 1px solid var(--slds-g-color-border-base-4, #aeaeae);
+    border-radius: 0.25rem;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.lup-input:focus {
+    border-color: var(--slds-g-color-brand-base-50, #0176d3);
+    box-shadow: 0 0 0 1px var(--slds-g-color-brand-base-50, #0176d3);
+}
+
+.lup-input::placeholder {
+    color: var(--slds-g-color-neutral-base-50, #9e9e9e);
+    font-style: italic;
+}
+
+.lup-input-error {
+    border-color: var(--slds-g-color-error-base-40, #ba0517) !important;
+    background: #fff8f8;
+}
+
+/* Dropdown — position:fixed so it escapes the table-wrap overflow context.
+   top/left/width are computed in JS and applied via inline style. */
+.lup-dropdown {
+    position: fixed;
+    z-index: 9999;
+    margin: 0;
+    padding: 0.25rem 0;
+    list-style: none;
+    background: var(--slds-g-color-neutral-base-100, #ffffff);
+    border: 1px solid var(--slds-g-color-border-base-1, #e5e5e5);
+    border-radius: 0.25rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.lup-option {
+    padding: 0.4375rem 0.75rem;
+    font-size: 0.8125rem;
+    color: var(--slds-g-color-neutral-base-10, #181818);
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.lup-option:hover {
+    background: var(--slds-g-color-neutral-base-95, #f3f3f3);
+    color: var(--slds-g-color-neutral-base-10, #181818);
+}
+
+.lup-empty {
+    color: var(--slds-g-color-neutral-base-50, #9e9e9e);
+    cursor: default;
+    font-style: italic;
+}
+
+.lup-empty:hover {
+    background: transparent;
+    color: var(--slds-g-color-neutral-base-50, #9e9e9e);
+}

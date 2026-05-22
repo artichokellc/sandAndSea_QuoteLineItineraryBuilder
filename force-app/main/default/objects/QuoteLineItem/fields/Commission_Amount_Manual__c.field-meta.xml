@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Commission_Amount_Manual__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description>Set to true when the user has manually entered a Commission $ value in the Itinerary Builder, preventing auto-recalculation from Sales Price and Commission %. Cleared when the user empties the Commission $ field.</description>
+    <externalId>false</externalId>
+    <label>Commission Amount Manual Override</label>
+    <trackHistory>false</trackHistory>
+    <type>Checkbox</type>
+</CustomField>

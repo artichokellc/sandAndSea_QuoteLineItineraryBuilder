@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>66.0</apiVersion>
+
+    <!--
+        QLI SET DEFAULT COMMISSION — Record-Triggered Before-Save Flow
+        Object: QuoteLineItem | Trigger: Create only | Mode: Before Save
+
+        When a QuoteLineItem is created with a Supplier__c populated:
+          1. Looks up Commission_Rate__c from the Supplier (Account)
+          2. Sets Commission_Percent__c           = Commission_Rate__c
+             Sets Booking_Channel_Commission_Percent__c = Commission_Rate__c
+             Sets Commission_Amount__c            = UnitPrice * Commission_Rate__c
+
+        Users can edit Commission_Percent__c and Commission_Amount__c after creation.
+        This flow does not interact with the Itinerary Builder screen flow UX.
+    -->
+
+    <!-- ═══ ASSIGNMENTS ═══ -->
+
+    <assignments>
+        <name>Assign_Commission_Fields</name>
+        <label>Set Commission Fields on Record</label>
+        <locationX>176</locationX>
+        <locationY>240</locationY>
+        <assignmentItems>
+            <assignToReference>$Record.Commission_Percent__c</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>var_commissionRate</elementReference>
+            </value>
+        </assignmentItems>
+        <!-- Booking_Channel_Commission_Percent__c is a formula field — it auto-populates
+             from Supplier__c.Commission_Rate__c and cannot be set by a Before-Save flow. -->
+        <assignmentItems>
+            <assignToReference>$Record.Commission_Amount__c</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>formula_commissionAmount</elementReference>
+            </value>
+        </assignmentItems>
+    </assignments>
+
+    <!-- ═══ METADATA ═══ -->
+
+    <description>Record-triggered before-save flow on QuoteLineItem. Fires on create when Supplier__c is populated. Reads Commission_Rate__c from the Supplier account and defaults Commission_Percent__c, Booking_Channel_Commission_Percent__c, and Commission_Amount__c (UnitPrice x Commission_Rate__c).</description>
+    <environments>Default</environments>
+
+    <!-- ═══ FORMULAS ═══ -->
+
+    <formulas>
+        <name>formula_commissionAmount</name>
+        <dataType>Currency</dataType>
+        <scale>2</scale>
+        <expression>{!$Record.UnitPrice} * {!var_commissionRate}</expression>
+    </formulas>
+
+    <interviewLabel>QLI Set Default Commission {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>QLI Set Default Commission</label>
+    <processType>AutoLaunchedFlow</processType>
+
+    <!-- ═══ RECORD LOOKUPS ═══ -->
+
+    <recordLookups>
+        <name>Get_Supplier</name>
+        <label>Get Supplier Commission Rate</label>
+        <locationX>176</locationX>
+        <locationY>120</locationY>
+        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Assign_Commission_Fields</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Id</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>$Record.Supplier__c</elementReference>
+            </value>
+        </filters>
+        <getFirstRecordOnly>true</getFirstRecordOnly>
+        <object>Account</object>
+        <outputAssignments>
+            <assignToReference>var_commissionRate</assignToReference>
+            <field>Commission_Rate__c</field>
+        </outputAssignments>
+    </recordLookups>
+
+    <!-- ═══ RUN IN MODE ═══ -->
+
+    <runInMode>DefaultMode</runInMode>
+
+    <!-- ═══ START ═══ -->
+
+    <!--
+        Entry filter: only run when Supplier__c is populated.
+        Trigger: Create only (Before Save) — users can freely edit fields after creation.
+    -->
+    <start>
+        <locationX>176</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Get_Supplier</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Supplier__c</field>
+            <operator>IsNull</operator>
+            <value>
+                <booleanValue>false</booleanValue>
+            </value>
+        </filters>
+        <object>QuoteLineItem</object>
+        <recordTriggerType>Create</recordTriggerType>
+        <triggerType>RecordBeforeSave</triggerType>
+    </start>
+    <status>Active</status>
+
+    <!-- ═══ VARIABLES ═══ -->
+
+    <variables>
+        <name>var_commissionRate</name>
+        <dataType>Number</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <scale>4</scale>
+    </variables>
+
+</Flow>

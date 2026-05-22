@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>66.0</apiVersion>
+
+    <!--
+        ITINERARY BUILDER (SPREADSHEET) — Screen Flow
+        Launched from Quick Action on Quote record.
+
+        Loads the itinerarySpreadsheet LWC which renders a spreadsheet-style
+        table for bulk entry of Quote Line Items. The LWC handles all validation
+        and DML via ItineraryBuilderController.saveItineraryLines, then dispatches
+        FlowNavigationNextEvent to advance to the success screen.
+
+        Flow sequence:
+          Get_Quote → Screen_Spreadsheet (LWC) → Screen_Success
+    -->
+
+    <description>Itinerary Builder (Spreadsheet) — spreadsheet-style bulk entry for Quote Line Items, launched from the Quote record Quick Action.</description>
+    <environments>Default</environments>
+    <interviewLabel>Itinerary Builder Spreadsheet {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>Itinerary Builder (Spreadsheet)</label>
+    <processType>Flow</processType>
+    <runInMode>DefaultMode</runInMode>
+
+    <!-- ═══ RECORD LOOKUPS ═══ -->
+
+    <recordLookups>
+        <name>Get_Quote</name>
+        <label>Get Quote</label>
+        <locationX>176</locationX>
+        <locationY>120</locationY>
+        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Screen_Spreadsheet</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Id</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>recordId</elementReference>
+            </value>
+        </filters>
+        <getFirstRecordOnly>true</getFirstRecordOnly>
+        <object>Quote</object>
+        <outputAssignments>
+            <assignToReference>var_pricebook2Id</assignToReference>
+            <field>Pricebook2Id</field>
+        </outputAssignments>
+    </recordLookups>
+
+    <!-- ═══ SCREENS ═══ -->
+
+    <screens>
+        <name>Screen_Spreadsheet</name>
+        <label>Spreadsheet Entry</label>
+        <locationX>176</locationX>
+        <locationY>240</locationY>
+        <allowBack>false</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <connector>
+            <targetReference>Screen_Success</targetReference>
+        </connector>
+        <fields>
+            <name>cmp_Spreadsheet</name>
+            <extensionName>c:itinerarySpreadsheet</extensionName>
+            <fieldType>ComponentInstance</fieldType>
+            <inputParameters>
+                <name>recordId</name>
+                <value>
+                    <elementReference>recordId</elementReference>
+                </value>
+            </inputParameters>
+            <inputParameters>
+                <name>pricebook2Id</name>
+                <value>
+                    <elementReference>var_pricebook2Id</elementReference>
+                </value>
+            </inputParameters>
+            <isRequired>true</isRequired>
+            <storeOutputAutomatically>false</storeOutputAutomatically>
+        </fields>
+        <showFooter>false</showFooter>
+        <showHeader>false</showHeader>
+    </screens>
+
+    <screens>
+        <name>Screen_Success</name>
+        <label>Success</label>
+        <locationX>176</locationX>
+        <locationY>360</locationY>
+        <allowBack>false</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <fields>
+            <name>display_Success</name>
+            <fieldText>&lt;p&gt;&lt;strong&gt;Itinerary saved successfully!&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;All line items have been added to the quote. Click Done to return to the record.&lt;/p&gt;</fieldText>
+            <fieldType>DisplayText</fieldType>
+        </fields>
+        <nextOrFinishButtonLabel>Done</nextOrFinishButtonLabel>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+
+    <!-- ═══ START ═══ -->
+
+    <start>
+        <locationX>176</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Get_Quote</targetReference>
+        </connector>
+    </start>
+    <status>Active</status>
+
+    <!-- ═══ VARIABLES ═══ -->
+
+    <variables>
+        <name>recordId</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+
+    <variables>
+        <name>var_pricebook2Id</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+
+</Flow>
