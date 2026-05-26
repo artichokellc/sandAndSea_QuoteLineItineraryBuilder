@@ -5,12 +5,18 @@ private class ItineraryBuilderControllerTest {
 
     @TestSetup
     static void makeData() {
-        // Account (used as Supplier + Provider) — must be Business_Supplier record type to pass Provider__c lookup filter
+        // Account (used as Supplier + Provider)
+        // Must be Business_Supplier record type to pass Provider__c lookup filter
+        // Must have Booking_Channel__c = true to pass Supplier__c lookup filter
         Id supplierRtId = Schema.SObjectType.Account
             .getRecordTypeInfosByDeveloperName()
             .get('Business_Supplier')
             .getRecordTypeId();
-        Account acct = new Account(Name = 'Test Supplier Co', RecordTypeId = supplierRtId);
+        Account acct = new Account(
+            Name               = 'Test Supplier Co',
+            RecordTypeId       = supplierRtId,
+            Booking_Channel__c = 'Yes'
+        );
         insert acct;
 
         // Product
