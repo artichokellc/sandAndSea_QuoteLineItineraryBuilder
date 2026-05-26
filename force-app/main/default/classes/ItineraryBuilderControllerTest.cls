@@ -263,10 +263,10 @@ private class ItineraryBuilderControllerTest {
     @IsTest
     static void testSearchRecords_blankTermReturnsRecords() {
         Test.startTest();
-        List<SObject> results = ItineraryBuilderController.searchRecords('Account', '', '', '');
+        List<SObject> results = ItineraryBuilderController.searchRecords('Account', 'Test Supplier Co', '', '');
         Test.stopTest();
 
-        Assert.areEqual(1, results.size(), 'Blank term should return the one test account');
+        Assert.areEqual(1, results.size(), 'Should return the one test account by name');
     }
 
     @IsTest

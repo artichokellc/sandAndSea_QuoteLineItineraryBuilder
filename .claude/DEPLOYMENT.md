@@ -14,6 +14,7 @@ These items must exist in the **production org** before deploying. They are not 
 - [ ] `QuoteLineItem.Commission_Percent__c` — Percent field
 - [ ] `QuoteLineItem.Booking_Channel_Commission_Percent__c` — Formula (Percent)
 - [ ] `Account.Commission_Rate__c` — Percent or Number field (auto-populates Commission % when a Supplier is selected)
+- [ ] `Account.Booking_Channel__c` — Required by the `Supplier__c` lookup filter on QuoteLineItem. Test class sets this to `'Yes'` on the test account; if the field is absent the test will fail and the deploy will be rejected.
 - [ ] Account Record Type `Business_Supplier` exists — DeveloperName must match exactly. Verify:
       `SELECT DeveloperName FROM RecordType WHERE SobjectType = 'Account' AND DeveloperName = 'Business_Supplier'`
 - [ ] Flow `QLI_Set_Default_Commission` is **deactivated** in production and must stay that way. Its commission formula (`UnitPrice × Commission_Rate__c`) does not divide by 100, producing values 100× too large. The Itinerary Builder LWC owns commission calculation. Do not activate this flow.
