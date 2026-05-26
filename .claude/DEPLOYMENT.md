@@ -49,6 +49,8 @@ sf project deploy validate \
   --target-org sandandsea_prod
 ```
 
+> **When validating via change set UI:** use **Run Specified Tests** and enter `ItineraryBuilderControllerTest`. This avoids running all org-wide tests and keeps validation fast.
+
 ---
 
 ## 3. Post-Deployment Manual Steps

@@ -6,35 +6,27 @@ A Salesforce LWC (`itinerarySpreadsheet`) + Apex controller (`ItineraryBuilderCo
 
 ## Project Status
 
-**Production deploy is PENDING.** Two change sets have been uploaded to Chris G's Production org — the original 8-component set and a patch. Before Chris deploys, read the sections below.
+**Validated and ready for Production deploy.** All 16 test methods passing. Change set has been uploaded to Chris G's Production org. See `.claude/DEPLOYMENT.md` for Chris's post-deploy steps.
 
 ---
 
-## Action Required Before Production Deploy
+## Test Class Fixes (applied 2026-05-26)
 
-The test class (`ItineraryBuilderControllerTest`) was updated to fix a slow-running test and a Production lookup-filter compatibility issue. **A new/updated change set must be created and uploaded to Production** with the latest version of this file:
+Two issues were found and fixed in `ItineraryBuilderControllerTest` during deployment validation in a staging sandbox:
 
-```
-force-app/main/default/classes/ItineraryBuilderControllerTest.cls
-```
+1. **Booking_Channel__c fix** — Production's `Supplier__c` lookup filter requires `Account.Booking_Channel__c = 'Yes'`. The original test account didn't set this field, causing all 16 tests to fail with `FIELD_FILTER_VALIDATION_EXCEPTION`. Fixed in `makeData()`.
 
-### What changed and why
-
-1. **Booking_Channel__c fix** — Production's `Supplier__c` lookup filter requires `Account.Booking_Channel__c = 'Yes'`. The original test account didn't set this field, causing all 16 tests to fail with `FIELD_FILTER_VALIDATION_EXCEPTION` during validation. Fixed in `makeData()`.
-
-2. **Slow test fix** — `testSearchRecords_blankTermReturnsRecords` was passing a blank search term, which becomes `LIKE '%'` — a full table scan. Against Production-scale data this ran for ~3 minutes per test. Fixed by passing `'Test Supplier Co'` instead.
-
-### Steps to re-deploy
-
-1. In the SBX org, clone or update the existing change set to include the updated `ItineraryBuilderControllerTest` class
-2. Upload the change set to Production
-3. Tell Chris G to deploy this updated set (it supersedes the previous patch)
+2. **Slow test fix** — `testSearchRecords_blankTermReturnsRecords` passed a blank search term, becoming `LIKE '%'` — a full table scan against Production-scale data (~3 min per test). Fixed by passing a specific search term instead.
 
 ---
 
 ## Deployment Guide
 
-See `.claude/DEPLOYMENT.md` for the full pre-deploy checklist, change set component list, and post-deploy manual steps (App Builder drag-and-drop, visibility filter, permission set assignment).
+See `.claude/DEPLOYMENT.md` for the full pre-deploy checklist, change set component list, and Chris's post-deploy steps.
+
+## Test Data Script
+
+`scripts/apex/populateTestData_execanon.apex` — paste into Execute Anonymous to create 3 supplier accounts, an Opportunity, a Quote, and 8 QLIs for testing. Requires the `Business_Supplier` Account record type to be assigned to the running user's profile.
 
 ## Code Location
 
