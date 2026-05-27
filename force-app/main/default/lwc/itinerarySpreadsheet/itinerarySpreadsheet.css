@@ -23,45 +23,21 @@
     border: 1px solid var(--sns-border);
 }
 
-/* ── Brand header ──────────────────────────────────────────────────────────── */
-.brand-header {
+/* ── Component header ──────────────────────────────────────────────────────── */
+.comp-header {
     background: linear-gradient(135deg, var(--sns-blue) 0%, var(--sns-blue-dark) 100%);
-    padding: 20px 24px 18px;
+    padding: 10px 24px;
     border-bottom: 3px solid var(--sns-gold);
     border-radius: 8px 8px 0 0;
-}
-
-.brand-logo {
-    font-size: 1.3125rem;
-    font-weight: 800;
-    letter-spacing: -0.01em;
-    color: #ffffff;
-    margin: 0 0 2px;
-    line-height: 1.2;
-}
-
-.brand-logo span {
-    color: var(--sns-gold);
-}
-
-.brand-tagline {
-    font-size: 0.6875rem;
-    color: rgba(255, 255, 255, 0.6);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    margin: 0 0 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .section-title {
     font-size: 1rem;
     font-weight: 600;
     color: #ffffff;
-    margin: 0 0 3px;
-}
-
-.section-subtitle {
-    font-size: 0.8125rem;
-    color: rgba(255, 255, 255, 0.6);
     margin: 0;
 }
 
