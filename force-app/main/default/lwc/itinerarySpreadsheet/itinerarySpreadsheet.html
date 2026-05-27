@@ -202,7 +202,18 @@
         <!-- ── Footer ────────────────────────────────────────────────────── -->
         <div class="table-footer">
 
-            <div class="footer-top">
+            <div class="footer-actions">
+                <div class="save-btn-wrap">
+                    <lightning-button
+                        label="Save All Line Items"
+                        variant="brand"
+                        onclick={handleSave}
+                        disabled={isSaving}
+                    ></lightning-button>
+                </div>
+                <template if:true={isSaving}>
+                    <lightning-spinner alternative-text="Saving..." size="small"></lightning-spinner>
+                </template>
                 <div class="add-row-wrap">
                     <lightning-button
                         label="+ Add Row"
@@ -219,20 +230,6 @@
                     {errorMessage}
                 </div>
             </template>
-
-            <div class="save-row">
-                <div class="save-btn-wrap">
-                    <lightning-button
-                        label="Save All Line Items"
-                        variant="brand"
-                        onclick={handleSave}
-                        disabled={isSaving}
-                    ></lightning-button>
-                </div>
-                <template if:true={isSaving}>
-                    <lightning-spinner alternative-text="Saving..." size="small"></lightning-spinner>
-                </template>
-            </div>
 
         </div>
 

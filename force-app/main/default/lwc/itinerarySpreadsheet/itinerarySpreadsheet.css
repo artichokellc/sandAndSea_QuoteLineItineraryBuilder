@@ -297,7 +297,7 @@ td {
     border-radius: 0 0 8px 8px;
 }
 
-.footer-top {
+.footer-actions {
     display: flex;
     align-items: center;
     gap: 12px;
@@ -338,15 +338,6 @@ td {
     flex-shrink: 0;
 }
 
-/* "Save All" row */
-.save-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid var(--sns-border);
-}
 
 /* "Save All Line Items" — ocean blue */
 .save-btn-wrap {

@@ -17,9 +17,14 @@
 **Options to explore:**
 - Read the lookup filter definition via Metadata API or `FieldDefinition` at runtime and apply dynamically (complex, but honors the "no code duplication" principle)
 - Add `Booking_Channel__c = 'Yes'` as a SOQL WHERE clause in `searchRecords` for the Account object (simpler, but duplicates the platform rule in code — Chris explicitly does not want this)
-- Use the standard Salesforce lookup component (`lightning-record-picker`, GA in API 59) which natively respects lookup filters configured in Setup
+- Use the standard Salesforce lookup component (`lightning-record-picker`, GA Spring '24) which natively respects lookup filters configured in Setup
 
-**Recommended approach:** Evaluate `lightning-record-picker` as a drop-in replacement for the custom `lookupInput` on the Supplier and Provider columns. It renders the platform lookup filter natively with no code duplication.
+**Why we didn't use `lightning-record-picker` for all three lookups:**
+The custom `lookupInput` was built because the Product column needs a pricebook filter (only show products active in the quote's pricebook) — a dynamic SOQL condition that `lightning-record-picker` does not support natively. The component also needs to render inline inside a table cell without standard field chrome. For those reasons, the custom component was the right call for Product and Provider.
+
+For the **Supplier field specifically**, `lightning-record-picker` is a viable drop-in — it doesn't need the pricebook filter, and it would honor the `Booking Channel = Yes` lookup filter natively with no code duplication. Worth evaluating as a targeted swap for Supplier only, leaving the custom `lookupInput` in place for Product and Provider.
+
+**Recommended approach:** Evaluate `lightning-record-picker` as a replacement for the custom `lookupInput` on the Supplier column only.
 
 **Status:** Open. For now, users will hit a save error if they select a non-qualifying account. Acceptable short-term per Chris.
 
@@ -84,7 +89,7 @@
 2. Condense the two subtitle lines into a single line
 3. Reduce top and bottom margin/padding on the header area
 
-**Status:** Open. Ready to implement — UI-only change, no Apex or data model work.
+**Status:** In testing in SBX (2026-05-27).
 
 ---
 
@@ -96,7 +101,7 @@
 1. Remove "Add" from the heading — use "Itinerary Line Items" or similar
 2. Add a help text hover icon (`lightning-helptext`) next to the heading that explains what the component does (e.g., "Use this grid to add, edit, or remove line items on this quote. Click Save All Line Items to persist your changes.")
 
-**Status:** Open. Ready to implement — UI-only change.
+**Status:** In testing in SBX (2026-05-27).
 
 ---
 
