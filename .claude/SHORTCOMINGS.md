@@ -2,6 +2,19 @@
 
 ---
 
+## ⭐ For Review — Chris G Meeting 2026-05-28
+
+Items raised by Chris after first Production use. Review status and prioritize together.
+
+| # | Item | Status |
+|---|---|---|
+| #19 | Supplier lookup ignores platform filter — evaluate `lightning-record-picker` | Open |
+| #20 | No "+ Add Supplier" shortcut in dropdown — hold until #19 resolved | Open |
+| #21 | "Promote to Trip Components" action on Quote → OLI | Open — requires OLI fields first |
+| #22 | Grid column set hardcoded; should be admin-configurable via Custom Metadata | Open — design decision needed |
+| #23 | Remove branding, condense header to single line, reduce padding | In testing SBX |
+| #24 | Rename heading, add helptext hover icon | In testing SBX |
+
 ---
 
 ## Open Issues — Active
@@ -102,6 +115,42 @@ For the **Supplier field specifically**, `lightning-record-picker` is a viable d
 2. Add a help text hover icon (`lightning-helptext`) next to the heading that explains what the component does (e.g., "Use this grid to add, edit, or remove line items on this quote. Click Save All Line Items to persist your changes.")
 
 **Status:** In testing in SBX (2026-05-27).
+
+---
+
+### #25 — No unsaved changes warning
+
+**What:** If a user edits rows in the grid and navigates away, refreshes the page, or closes the tab before clicking Save All Line Items, all unsaved changes are silently lost. There is no "You have unsaved changes — are you sure you want to leave?" guard.
+
+**Risk:** Real data loss. The component lives on the Quote record page where users frequently click tabs, related lists, and other page elements.
+
+**Recommended approach:** Track a `_isDirty` boolean in component state, set to `true` on any row change and reset to `false` after a successful save. Use the LWC `beforeunload` event (via `window.addEventListener`) to prompt on browser refresh/close. For in-page navigation (clicking away to another tab), the platform `NavigationMixin` does not expose a before-navigate hook in LWC — the practical mitigation is a visible "Unsaved changes" indicator in the footer so users are at least aware.
+
+**Status:** Open.
+
+---
+
+### #26 — Save errors are shown as a generic banner with no row-level attribution
+
+**What:** When `saveItineraryLines` fails (e.g., a lookup filter violation, a required field, or a validation rule on one row), a generic error banner appears at the bottom of the component. The user has no indication which row caused the failure, and rows that saved successfully are indistinguishable from the one that failed.
+
+**Desired behavior:** Failed rows should be highlighted (red left border or background tint) with an inline error message beneath the row explaining the specific failure. This is especially important until #19 (Supplier lookup filter) is resolved, since that is currently the most likely save failure mode.
+
+**Recommended approach:** Parse the `DmlException` error list in Apex by row index and return structured error objects alongside the save result. The LWC maps errors back to rows by position and sets a `_rowError` / `_rowErrorMessage` flag on the affected row objects.
+
+**Status:** Open.
+
+---
+
+### #27 — No read-only mode when Quote is locked or Accepted
+
+**What:** The component renders as fully editable regardless of Quote Status. If a Quote is Accepted, Denied, or has been synced/locked by the org, Salesforce will reject any DML on its QLIs — but the grid still shows all inputs as editable. A user can type changes, hit Save, and receive a confusing platform error with no explanation.
+
+**Desired behavior:** On component load, check `Quote.Status`. If the status is anything other than `Draft` (or whatever the org defines as "editable"), render the grid in a read-only display mode: inputs replaced with plain text, Save and Add Row buttons hidden, a banner explaining why editing is disabled (e.g., "This quote has been accepted and cannot be edited.").
+
+**Relationship to #21:** The "Promote to Trip Components" button (#21) should only appear when Status = Accepted. At that point the grid should be read-only. These two features should be designed together.
+
+**Status:** Open.
 
 ---
 
