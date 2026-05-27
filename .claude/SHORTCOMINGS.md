@@ -6,6 +6,100 @@
 
 ## Open Issues — Active
 
+### #19 — Supplier lookup does not respect platform lookup filter (shows all accounts)
+
+**What:** The `lookupInput` component's `searchRecords` Apex call queries Account freely. The platform-configured lookup filter on `Supplier__c` (Booking Channel = Yes) is not enforced at search time — users see all accounts in the dropdown. The filter IS enforced at DML save (Salesforce rejects records that don't match), so saves will error if the user picks a non-qualifying account.
+
+**Current behavior:** Bad UX — user can select a supplier that will fail on save with a cryptic error.
+
+**Desired behavior:** Supplier search only surfaces accounts where `Booking_Channel__c = 'Yes'`, matching the platform filter. Chris's preference: do NOT hard-code the rule in Apex — instead, find a way to read and respect the platform-configured lookup filter dynamically so admin changes to the filter are automatically honored.
+
+**Options to explore:**
+- Read the lookup filter definition via Metadata API or `FieldDefinition` at runtime and apply dynamically (complex, but honors the "no code duplication" principle)
+- Add `Booking_Channel__c = 'Yes'` as a SOQL WHERE clause in `searchRecords` for the Account object (simpler, but duplicates the platform rule in code — Chris explicitly does not want this)
+- Use the standard Salesforce lookup component (`lightning-record-picker`, GA in API 59) which natively respects lookup filters configured in Setup
+
+**Recommended approach:** Evaluate `lightning-record-picker` as a drop-in replacement for the custom `lookupInput` on the Supplier and Provider columns. It renders the platform lookup filter natively with no code duplication.
+
+**Status:** Open. For now, users will hit a save error if they select a non-qualifying account. Acceptable short-term per Chris.
+
+---
+
+### #20 — No "+ Add Supplier" shortcut in the Supplier lookup
+
+**What:** When users search for a supplier and it doesn't exist yet, there is no way to create one without leaving the Itinerary Builder. Standard Salesforce lookup fields show a "+ New [Object]" option at the bottom of the dropdown that launches a quick action modal.
+
+**Desired behavior:** The Supplier lookup dropdown should show an "+ Add Supplier" option at the bottom of the results list. Clicking it launches the existing **New Supplier** global action (already configured in the org's global action menu) as a modal. On save, the new account populates the Supplier field on the row.
+
+**Implementation notes:** The global action can be launched via `NavigationMixin.Navigate` with `type: 'standard__quickAction'` and `actionName: 'NewAccount'` (or whatever the org's New Supplier global action API name is). To open it as a modal without leaving the page, consider `lightning/modal` wrapping a `lightning-flow` or `force:createRecord` event. The `lookupInput` child LWC would need to emit an event up to the parent, which owns the navigation context.
+
+**Status:** Open. Enhancement for next sprint.
+
+---
+
+### #21 — "Promote to Trip Components" action on Quote
+
+**What:** A new action button on the Quote record page (only visible when Quote Status = Accepted) that lets users select which QLIs to promote to Opportunity Line Items (Trip Components / OLIs). This is the handoff from quoting to booking.
+
+**Full flow:**
+1. Button appears on Quote only when `Status = 'Accepted'`
+2. User clicks → multi-select list of QLIs on the quote (checkboxes, show Description + Product + Price)
+3. User selects one or more rows → clicks "Promote"
+4. Each selected QLI is cloned to an OLI on the parent Opportunity, copying all relevant fields (Product, Price, Quantity, Description, Supplier, Provider, Start/End Date, Commission fields)
+5. New OLIs are created with `Status = 'Pending'` (overriding the org default of 'Confirmed')
+
+**Dependencies:**
+- Custom fields (`Supplier__c`, `Provider__c`, `Start_Date__c`, `End_Date__c`, `Commission_Amount__c`, `Commission_Percent__c`) must exist on OpportunityLineItem (they currently exist on QuoteLineItem only) — see #16
+- The parent Opportunity must have a Pricebook assigned (same pricebook as the Quote, typically)
+
+**Related:** See #16 (Lift to OLI) for the broader OLI data model work this depends on.
+
+**Status:** Open. Requires #16 field creation as a prerequisite.
+
+---
+
+### #22 — Grid column set is hardcoded; should be admin-configurable
+
+**What:** The columns displayed in the Itinerary Builder grid are defined in the LWC JavaScript and HTML. Adding, removing, or reordering a column requires a code change and redeployment. Chris wants to be able to adjust the displayed fields as an admin without opening the code.
+
+**Desired behavior:** The set of columns (and their order) rendered in the grid should be driven by a configuration source that an admin can modify — without developer involvement.
+
+**Options to explore:**
+- Custom Metadata Type (e.g., `Itinerary_Column__mdt`) with rows for each column (API name, label, type, order, visible) — queried at component load via Apex
+- Custom Settings or a JSON field on a Custom Setting record
+- `lightning-datatable` column definition stored as a JSON blob on a Custom Metadata record
+
+**Relationship to #17:** This is the admin-facing half of the reusability work described in #17. #17 covers code-level reusability; this issue covers runtime configurability by admins.
+
+**Status:** Open. Medium complexity. Recommended to design alongside #21 (Promote to Trip Components) since that feature will likely require a different column set than the Quote grid.
+
+---
+
+### #23 — Remove branding header; condense subtitle; reduce top/bottom padding
+
+**What:** The component currently renders the Sand & Sea Travel logo/branding block at the top, followed by "Add Itinerary Line Items" and a subtitle on separate lines with generous padding. In production this wastes vertical space.
+
+**Requested changes:**
+1. Remove the company branding block entirely (logo, company name, tagline)
+2. Condense the two subtitle lines into a single line
+3. Reduce top and bottom margin/padding on the header area
+
+**Status:** Open. Ready to implement — UI-only change, no Apex or data model work.
+
+---
+
+### #24 — "Add Itinerary Line Items" header should be renamed and get a help icon
+
+**What:** "Add Itinerary Line Items" implies the component is only for adding new rows. In practice it is also used for editing and viewing existing rows. The word "Add" is misleading.
+
+**Requested changes:**
+1. Remove "Add" from the heading — use "Itinerary Line Items" or similar
+2. Add a help text hover icon (`lightning-helptext`) next to the heading that explains what the component does (e.g., "Use this grid to add, edit, or remove line items on this quote. Click Save All Line Items to persist your changes.")
+
+**Status:** Open. Ready to implement — UI-only change.
+
+---
+
 ### #18 — Rows with manually overridden Commission $ are not visually highlighted
 
 **What:** When a user manually enters a Commission $ value (`_commAmountManual = true` / `Commission_Amount_Manual__c = true`), the row looks identical to rows where commission was auto-calculated. There is no visual indicator distinguishing "user-locked" commission rows from auto-computed ones.
